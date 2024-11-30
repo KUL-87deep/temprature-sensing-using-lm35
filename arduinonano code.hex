@@ -1,0 +1,215 @@
+#include<stdio.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+// Define LM35 data pin connection
+#define LM35_pin A0
+
+// Segment pins definitions
+#define SegA 12
+#define SegB 11
+#define SegC 10
+#define SegD 9
+#define SegE 8
+#define SegF 7
+#define SegG 6
+#define SegDP 5
+
+// Common pins of the three digits definitions
+#define Dig1 4
+#define Dig2 3
+#define Dig3 2
+
+// Variable declarations
+byte current_digit;
+int temp;
+
+void setup()
+{
+  pinMode(SegA, OUTPUT);
+  pinMode(SegB, OUTPUT);
+  pinMode(SegC, OUTPUT);
+  pinMode(SegD, OUTPUT);
+  pinMode(SegE, OUTPUT);
+  pinMode(SegF, OUTPUT);
+  pinMode(SegG, OUTPUT);
+  pinMode(SegDP, OUTPUT);
+  pinMode(Dig1, OUTPUT);
+  pinMode(Dig2, OUTPUT);
+  pinMode(Dig3, OUTPUT);
+
+  disp_off(); // Turn off the display
+
+  // Timer1 module overflow interrupt configuration
+  TCCR1A = 0;
+  TCCR1B = 1; // Enable Timer1 with prescaler = 1 (16 ticks each 1 µs)
+  TCNT1 = 0;  // Set Timer1 preload value to 0 (reset)
+  TIMSK1 = 1; // Enable Timer1 overflow interrupt
+
+  analogReference(INTERNAL); // Set positive reference voltage to 1.1V
+}
+
+ISR(TIMER1_OVF_vect) // Timer1 interrupt service routine (ISR)
+{
+  disp_off(); // Turn off the display
+
+  switch (current_digit)
+  {
+    case 1:
+      disp((temp / 100) % 10);
+      digitalWrite(Dig1, LOW); // Turn on digit 1
+      break;
+
+    case 2:
+      disp((temp / 10) % 10);  // Prepare to display digit 2
+      digitalWrite(SegDP, LOW); // Print decimal point ( . )
+      digitalWrite(Dig2, LOW);  // Turn on digit 2
+      break;
+
+    case 3:
+      disp(temp % 10); // Prepare to display digit 3
+      digitalWrite(Dig3, LOW); // Turn on digit 3
+  }
+
+  current_digit = (current_digit % 3) + 1;
+}
+
+// Main loop
+void loop()
+{
+  temp = 10 * analogRead(LM35_pin) / 9.3; // Read analog voltage and convert it to °C (9.3 = 1023/(1.1*100))
+
+  // Check if the temperature is between 37 and 41 degrees
+  if (temp >= 37 && temp <= 41) {
+    delay(1000); // Wait 1 second
+  } else {
+    temp = 0; // Set the temperature to 0 if it's not in the desired range
+    delay(1000); // Wait 1 second
+  }
+}
+
+void disp(byte number)
+{
+  // The display code remains the same as in the original code
+  // ...
+    switch (number)
+  {
+    case 0:  // print 0
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, LOW);
+      digitalWrite(SegE, LOW);
+      digitalWrite(SegF, LOW);
+      digitalWrite(SegG, HIGH);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 1:  // print 1
+      digitalWrite(SegA, HIGH);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, HIGH);
+      digitalWrite(SegE, HIGH);
+      digitalWrite(SegF, HIGH);
+      digitalWrite(SegG, HIGH);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 2:  // print 2
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, HIGH);
+      digitalWrite(SegD, LOW);
+      digitalWrite(SegE, LOW);
+      digitalWrite(SegF, HIGH);
+      digitalWrite(SegG, LOW);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 3:  // print 3
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, LOW);
+      digitalWrite(SegE, HIGH);
+      digitalWrite(SegF, HIGH);
+      digitalWrite(SegG, LOW);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 4:  // print 4
+      digitalWrite(SegA, HIGH);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, HIGH);
+      digitalWrite(SegE, HIGH);
+      digitalWrite(SegF, LOW);
+      digitalWrite(SegG, LOW);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 5:  // print 5
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, HIGH);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, LOW);
+      digitalWrite(SegE, HIGH);
+      digitalWrite(SegF, LOW);
+      digitalWrite(SegG, LOW);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 6:  // print 6
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, HIGH);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, LOW);
+      digitalWrite(SegE, LOW);
+      digitalWrite(SegF, LOW);
+      digitalWrite(SegG, LOW);
+      digitalWrite(SegDP, HIGH);
+      break;
+    
+    case 7:  // print 7
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, HIGH);
+      digitalWrite(SegE, HIGH);
+      digitalWrite(SegF, HIGH);
+      digitalWrite(SegG, HIGH);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 8:  // print 8
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, LOW);
+      digitalWrite(SegE, LOW);
+      digitalWrite(SegF, LOW);
+      digitalWrite(SegG, LOW);
+      digitalWrite(SegDP, HIGH);
+      break;
+
+    case 9:  // print 9
+      digitalWrite(SegA, LOW);
+      digitalWrite(SegB, LOW);
+      digitalWrite(SegC, LOW);
+      digitalWrite(SegD, LOW);
+      digitalWrite(SegE, HIGH);
+      digitalWrite(SegF, LOW);
+      digitalWrite(SegG, LOW);
+      digitalWrite(SegDP, HIGH);
+  }
+
+}
+
+void disp_off()
+{
+  digitalWrite(Dig1, HIGH);
+  digitalWrite(Dig2, HIGH);
+  digitalWrite(Dig3, HIGH);
+}
